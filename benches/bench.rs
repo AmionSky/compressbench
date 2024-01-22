@@ -79,10 +79,10 @@ fn compare_compress(c: &mut Criterion) {
 		let orig = &uncompressed;
 		compressed.clear();
 		compressed.resize(orig_len * 2, 0_u8);
-		let comp_len = zstd::block::compress_to_buffer(orig, &mut compressed, level).unwrap();
+		let comp_len = zstd::bulk::compress_to_buffer(orig, &mut compressed, level).unwrap();
 		group.bench_function(&format!("zstd-level-{}.pack", level), |b| {
 			b.iter(|| {
-				zstd::block::compress_to_buffer(black_box(orig), black_box(&mut compressed), black_box(level))
+				zstd::bulk::compress_to_buffer(black_box(orig), black_box(&mut compressed), black_box(level))
 			})
 		});
 		println!("zstd-level-{}: {} bytes", level, comp_len);
@@ -92,7 +92,7 @@ fn compare_compress(c: &mut Criterion) {
 		group.bench_function(&format!("zstd-level-{}.unpack", level), |b| {
 			b.iter(|| {
 				black_box(&mut unpacked).clear();
-				zstd::block::decompress_to_buffer(black_box(comp), black_box(&mut unpacked))
+				zstd::bulk::decompress_to_buffer(black_box(comp), black_box(&mut unpacked))
 			})
 		});
 	}
@@ -115,6 +115,7 @@ fn compare_compress(c: &mut Criterion) {
             snap::raw::Decoder::new().decompress(black_box(comp), black_box(&mut unpacked))
         })
     });
+	/*
     group.bench_function("snappy-framed.pack", |b| {
         b.iter(|| {
 			black_box(&mut compressed).clear();
@@ -140,6 +141,7 @@ fn compare_compress(c: &mut Criterion) {
             decoder.read_to_end(black_box(&mut unpacked))
         })
     });
+	*/
     // deflate
     use deflate::Compression;
     for &level in &[Compression::Fast, Compression::Default, Compression::Best] {
@@ -311,6 +313,7 @@ fn compare_compress(c: &mut Criterion) {
 	// unfortunately, tar only unpacks to disk, so this result would be
 	// incomparable. Perhaps in a later benchmark.
     // zip
+	/*
 	group.bench_function("zip.pack", |b| {
 		compressed.clear();
 		compressed.resize(orig_len * 2, 0_u8);
@@ -321,6 +324,7 @@ fn compare_compress(c: &mut Criterion) {
 			zipw.finish().unwrap();
 		})
 	});
+	
 	let ziplen = {
 		let mut zipw = zip::ZipWriter::new(Cursor::new(&mut compressed));
 		zipw.start_file("data", zip::write::FileOptions::default()).unwrap();
@@ -328,6 +332,7 @@ fn compare_compress(c: &mut Criterion) {
 		let c = zipw.finish().unwrap();
 		c.position() as usize
 	};
+	
 	println!("zip: {} bytes", ziplen);
 	group.bench_function("zip.unpack", |b| {
 		b.iter(|| {
@@ -336,6 +341,7 @@ fn compare_compress(c: &mut Criterion) {
 			zipr.by_index(0).unwrap().read_to_end(black_box(&mut unpacked)).unwrap();
 		})
 	});
+	*/
     group.finish();
 }
 
